@@ -64,7 +64,6 @@ depth.dm<-function(data,method){
   return(dm)
 }
 
-#depth.dm: similarity matrix based on Mahalanobis depth with multiple covariance matrices
 depth.dm_m<-function(data,class,cov.mat.set){
   n=nrow(data)
   dm<-matrix(0,n,n)
@@ -83,6 +82,7 @@ depth.dm_m<-function(data,class,cov.mat.set){
       } else {
         dm[j,i]<-1/(1+t(c)%*%as.matrix(covm.i.set[[class[j]]])%*%c)
       }
+    }
   } 
   diag(dm)<-1
   return(dm)
