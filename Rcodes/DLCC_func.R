@@ -83,7 +83,6 @@ depth.dm_m<-function(data,class,cov.mat.set){
       } else {
         dm[j,i]<-1/(1+t(c)%*%as.matrix(covm.i.set[[class[j]]])%*%c)
       }
-    }
   } 
   diag(dm)<-1
   return(dm)
@@ -673,7 +672,7 @@ DRcluster<-function(data,dm0,Th,size,method,class_method,maxdepth){
       prop.k<--diff(sort.k)
     } else {
       sort.k<-abs(sort(nk))
-      prop.k<--diff(nk)
+      prop.k<--diff(sort.k)
     }
     if (length(prop.k)<=1){p.id=1}else{p.id<-order(prop.k,decreasing = T)}
     lab_pos<-which(k==sort.k[p.id[1]])[1]
