@@ -51,7 +51,7 @@ bestpara_smy<-para_select_max2(data_p3,paralist = paralist_smy$paralist,dm_p3,me
 paralist_cpx<-para_select_max(data_X,sizelist = seq(25,30,5),dm_X,0.1)
 bestpara_cpx<-para_select_max2(data_X,paralist = paralist_cpx$paralist,dm_X,method = 'mclass',maxdepth = F)
 
-
+# cpxlist<-para_select_max.K(data_X,25,dm_X,11,beginTh=0.5,outlist = T)
 #MIN STRATEGY
 
 #IRIS
@@ -76,7 +76,8 @@ class<-sapply(1:nrow(iris), function(x){which.max(iris_EM$z[x,])})
 cov.mat.set<-iris_EM$cov
 dm_m_iris<-depth.dm_m(iris[,-5],class,cov.mat.set)
 set.seed(123)
-Iris_temp_clus<-DRcluster(data=iris[,-5],dm0=dm_m_iris,0.7,50,method = 'min',class_method = 'maxdep',T)
+sim_min_iris<-para_min(iris[,-5],50,dm_m_iris)
+Iris_temp_clus<-DRcluster(data=iris[,-5],dm0=dm_m_iris,0.72,50,method = 'min',class_method = 'maxdep',T)
 table(Iris_temp_clus$depth_clus$cluster_vector,iris_real)
 adjustedRandIndex(Iris_temp_clus$depth_clus$cluster_vector,iris_real)
 
@@ -128,7 +129,8 @@ class<-sapply(1:nrow(seed_data), function(x){which.max(seed_EM$z[x,])})
 cov.mat.set<-seed_EM$cov
 dm_m_seed<-depth.dm_m(seed_data,class,cov.mat.set)
 set.seed(123)
-seed_temp_clus<-DRcluster(seed_data,dm0=dm_m_seed,Th=0.8,size =70,method = 'min',class_method = 'maxdep',maxdepth = T)
+sim_min_seed<-para_min(seed_data,70,dm_m_seed)
+seed_temp_clus<-DRcluster(seed_data,dm0=dm_m_seed,Th=0.76,size =70,method = 'min',class_method = 'maxdep',maxdepth = T)
 table(seed_temp_clus$depth_clus$cluster_vector,seed_label+1)
 adjustedRandIndex(seed_temp_clus$depth_clus$cluster_vector,(seed_label+1))#0.787
 
@@ -153,7 +155,9 @@ dm_eu<-dist(wine_data,diag = T,upper = T)
 # dm_eu<-dm_eu^2
 dm_eu<-1/(1+dm_eu)%>%as.matrix()
 diag(dm_eu)<-1
-wine_temp_clus<-DRcluster(wine_data,dm_eu,Th=0.7,size =50,method = 'min',class_method = 'maxdep',maxdepth = T)
+sim_min_wine<-para_min(wine_data,50,dm_eu)
+
+wine_temp_clus<-DRcluster(wine_data,dm_eu,Th=0.14,size =50,method = 'min',class_method = 'maxdep',maxdepth = T)
 table(wine_temp_clus$depth_clus$cluster_vector,wine_label)
 adjustedRandIndex(wine_temp_clus$depth_clus$cluster_vector,wine_label)#0.982
 
@@ -182,7 +186,9 @@ cov.mat.set<-M_s$parameters$variance$sigma
 cov.mat.set<-lapply(1:dim(cov.mat.set)[3],function(x){cov.mat.set[,,x]})
 dm_sim<-depth.dm_m(sim_data,class,cov.mat.set)
 set.seed(123)
-sim_temp_clus<-DRcluster(sim_data%>%as.data.frame(),dm_sim,Th=0.7,size =250,method = 'min',class_method = 'maxdep',maxdepth = F)
+sim_minray<-para_min(sim_data%>%as.data.frame(),250,dm_sim)
+
+sim_temp_clus<-DRcluster(sim_data%>%as.data.frame(),dm_sim,Th=0.33,size =250,method = 'min',class_method = 'maxdep',maxdepth = F)
 adjustedRandIndex(sim_temp_clus$depth_clus$cluster_vector,zl)#0.823
 
 #plot
@@ -190,7 +196,9 @@ V6<-sim_temp_clus$depth_clus$cluster_vector
 data_new<-cbind(sim_data,V6)%>%as.data.frame()
 data_new$V6<-as.factor(data_new$V6)
 ggplot(data_new, aes(x = V1, 
-                     y = V2, color = as.factor(zl))) + geom_point(show.legend = F)+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+                     y = V2, color = as.factor(zl))) + geom_point(show.legend = T)+geom_point(data=data_new[735,], aes(x = V1, 
+                                                                                                                         y = V2, color = as.factor(zl)[735],size=1))
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
                                                                                            panel.background = element_blank(), axis.line = element_line(colour = "black"))
 
 ggplot(data_new, aes(x = V1, 
@@ -264,6 +272,7 @@ clus.temp<-rep(NA,nrow(data_ba))
 for (i in 1:length(ba_temp_clus$temp.clus)) {
   clus.temp[ba_temp_clus$temp.clus[[i]]]<-i
 }
+
 
 
 ggplot(data_ba, aes(x = x, 

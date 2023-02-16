@@ -64,6 +64,7 @@ depth.dm<-function(data,method){
   return(dm)
 }
 
+#depth.dm_m: similarity matrix based on Mahalanobis depth with multiple covariance matrices
 depth.dm_m<-function(data,class,cov.mat.set){
   n=nrow(data)
   dm<-matrix(0,n,n)
@@ -83,7 +84,7 @@ depth.dm_m<-function(data,class,cov.mat.set){
         dm[j,i]<-1/(1+t(c)%*%as.matrix(covm.i.set[[class[j]]])%*%c)
       }
     }
-  } 
+  }
   diag(dm)<-1
   return(dm)
 }
@@ -211,16 +212,13 @@ EM_CM<-function(data,Kset,t,covm){
 }
 
 #Section: Local center selections
-#tan value
-calc.k<-function(k1,k2){
-  k=(k1-k2)/(1+k1*k2)
-  return(k)
-}  
+
 
 #current proportion of a's neighbors
 f.prop<-function(a,size,Nobs,dm0.order){
   all_nbs<-dm0.order[1:size,a]%>%as.numeric()%>%unique
   prop<-length(all_nbs)/Nobs
+  return(prop)
 }
 
 #Section: Clustering in DLCC
@@ -550,38 +548,61 @@ get.local.center<-function(data,dm0,size,method){
     
     props<-sapply(1:length(sort.choose),function(x){f.prop(n.sort.choose[1:x],size,Nobs,dm0.order)})
     d.props<-diff(props)
-    k<-sapply(1:(length(d.props)-1), function(x){calc.k(d.props[x],d.props[x+1])})
-    nk<-k[which(k<0)]
-    nk<-nk[which(-nk>median(abs(k)))]
-    k<-abs(k)
-    if (length(nk)==0){
-      sort.k<- sort(k,decreasing = T)
-      prop.k<--diff(sort.k)
+    wd0<-which(d.props==0)
+    if (length(wd0)>0){
+      a_3<-n.sort.choose[-(wd0+1)]
     } else {
-      sort.k<-abs(sort(nk))
-      prop.k<--diff(nk)
+      a_3<-n.sort.choose
     }
-    if (length(prop.k)<=1){p.id=1}else{p.id<-order(prop.k,decreasing = T)}
-    lab_pos<-which(k==sort.k[p.id[1]])[1]
-    if (d.props[lab_pos]>d.props[lab_pos+1]){
-      a<-n.sort.choose[1:(lab_pos+1)]
-    } else {
-      a<-n.sort.choose[1:(lab_pos+2)]
-    }
-    while (props[length(a)]<0.7){
-      p.id<-p.id[-1]
-      if (length(p.id)==0){
-        ind<-min(which(props>=0.7)[1],length(props))
-        a<-n.sort.choose[1:ind]
-        props[length(a)]=0.7
-      } else {
-        lab_pos<-which(k==sort.k[p.id[1]])[1]
-        if (d.props[lab_pos]>d.props[lab_pos+1]){
-          a<-n.sort.choose[1:(lab_pos+1)]
-        } else {
-          a<-n.sort.choose[1:(lab_pos+2)]
-        }
+    p2<-sapply(1:length(a_3),function(x){f.prop(a_3[1:x],size,Nobs,dm0.order)})
+    dmsub<-dm0[a_3,a_3]
+    la<-length(a_3)
+    dmsub2<-matrix(0,la,la)
+    for (i in 1:(la-1)) {
+      for (j in (i+1):la) {
+        dmsub2[j,i]<-(dmsub[i,j]+dmsub[j,i])/2
       }
+    }
+    
+    mss<-sapply(1:la,function(x){max(dmsub2[x,])})
+    
+    
+    maxprop<-props[1]
+    dp2<-diff(p2)
+    maxl<-which(dp2==maxprop)
+    if ((maxl%>%length())>0){
+      sort.p2<-dp2[-which(dp2==maxprop)]%>%sort(decreasing = T)
+    } else {
+      sort.p2<-dp2%>%sort(decreasing = T)
+    }
+    if (length(sort.p2)<=1){
+      a<-a_3
+    } else {
+      prop.pr<--diff(sort.p2)%>%signif(8)
+      p.id<-order(prop.pr,decreasing = T)
+      
+      rank.pr<-rep(1000,la)
+      for (i in 1:length(p.id)){
+        pr.id<-which(dp2==sort.p2[p.id[i]])+1
+        if (length(pr.id)>1){
+          labelled<-which(rank.pr[pr.id]!=1000)
+          if (length(labelled)>0){
+            pr.id<-pr.id[-labelled]
+          }
+          pr.id<-pr.id[1]
+        }
+        rank.pr[pr.id]<-i
+      }
+      mss[c(1,(maxl+1))]<-1000
+      rank.dis<-mss%>%rank()
+      rank.dis[c(1,(maxl+1))]<-1000
+      lab_pos<-which.min(rank.pr*0.6+0.4*rank.dis)
+      a<-a_3[1:(lab_pos)]
+    }
+    
+    if (p2[length(a)]<0.7){
+      ind<-min(which(p2>=0.7)[1],length(p2))
+      a<-a_3[1:ind]
     }
   } else if (method=='max'){
     a<-t.rank%>%names()%>%as.numeric()
@@ -663,38 +684,61 @@ DRcluster<-function(data,dm0,Th,size,method,class_method,maxdepth){
     
     props<-sapply(1:length(sort.choose),function(x){f.prop(n.sort.choose[1:x],size,Nobs,dm0.order)})
     d.props<-diff(props)
-    k<-sapply(1:(length(d.props)-1), function(x){calc.k(d.props[x],d.props[x+1])})
-    nk<-k[which(k<0)]
-    nk<-nk[which(-nk>median(abs(k)))]
-    k<-abs(k)
-    if (length(nk)==0){
-      sort.k<- sort(k,decreasing = T)
-      prop.k<--diff(sort.k)
+    wd0<-which(d.props==0)
+    if (length(wd0)>0){
+      a_3<-n.sort.choose[-(wd0+1)]
     } else {
-      sort.k<-abs(sort(nk))
-      prop.k<--diff(sort.k)
+      a_3<-n.sort.choose
     }
-    if (length(prop.k)<=1){p.id=1}else{p.id<-order(prop.k,decreasing = T)}
-    lab_pos<-which(k==sort.k[p.id[1]])[1]
-    if (d.props[lab_pos]>d.props[lab_pos+1]){
-      a<-n.sort.choose[1:(lab_pos+1)]
-    } else {
-      a<-n.sort.choose[1:(lab_pos+2)]
-    }
-    while (props[length(a)]<0.7){
-      p.id<-p.id[-1]
-      if (length(p.id)==0){
-        ind<-min(which(props>=0.7)[1],length(props))
-        a<-n.sort.choose[1:ind]
-        props[length(a)]=0.7
-      } else {
-        lab_pos<-which(k==sort.k[p.id[1]])[1]
-        if (d.props[lab_pos]>d.props[lab_pos+1]){
-          a<-n.sort.choose[1:(lab_pos+1)]
-        } else {
-          a<-n.sort.choose[1:(lab_pos+2)]
-        }
+    p2<-sapply(1:length(a_3),function(x){f.prop(a_3[1:x],size,Nobs,dm0.order)})
+    dmsub<-dm0[a_3,a_3]
+    la<-length(a_3)
+    dmsub2<-matrix(0,la,la)
+    for (i in 1:(la-1)) {
+      for (j in (i+1):la) {
+        dmsub2[j,i]<-(dmsub[i,j]+dmsub[j,i])/2
       }
+    }
+    
+    mss<-sapply(1:la,function(x){max(dmsub2[x,])})
+    
+    
+    maxprop<-props[1]
+    dp2<-diff(p2)
+    maxl<-which(dp2==maxprop)
+    if ((maxl%>%length())>0){
+      sort.p2<-dp2[-which(dp2==maxprop)]%>%sort(decreasing = T)
+    } else {
+      sort.p2<-dp2%>%sort(decreasing = T)
+    }
+    if (length(sort.p2)<=1){
+      a<-a_3
+    } else {
+      prop.pr<--diff(sort.p2)%>%signif(8)
+      p.id<-order(prop.pr,decreasing = T)
+      
+      rank.pr<-rep(1000,la)
+      for (i in 1:length(p.id)){
+        pr.id<-which(dp2==sort.p2[p.id[i]])+1
+        if (length(pr.id)>1){
+          labelled<-which(rank.pr[pr.id]!=1000)
+          if (length(labelled)>0){
+            pr.id<-pr.id[-labelled]
+          }
+          pr.id<-pr.id[1]
+        }
+        rank.pr[pr.id]<-i
+      }
+      mss[c(1,(maxl+1))]<-1000
+      rank.dis<-mss%>%rank()
+      rank.dis[c(1,(maxl+1))]<-1000
+      lab_pos<-which.min(rank.pr*0.6+0.4*rank.dis)
+      a<-a_3[1:(lab_pos)]
+    }
+    
+    if (p2[length(a)]<0.7){
+      ind<-min(which(p2>=0.7)[1],length(p2))
+      a<-a_3[1:ind]
     }
     
   } else if (method=='max'){
@@ -771,6 +815,7 @@ DRcluster<-function(data,dm0,Th,size,method,class_method,maxdepth){
   }
   return(list('temp.center'=temp.cl,'temp.clus'=temp.clus,'depth_clus'=depth_clus))
 }
+
 #DAobs: Given temp clusters, given final clustering results
 DAobs<-function(data,temp.clus,method,maxdepth){
   X<-data
@@ -1130,4 +1175,49 @@ para_select_max2<-function(data,paralist,dm0,method,maxdepth){
   }
   bestpara<-paralist[[which.max(fs)]]
   return(list(bestpara=bestpara,fs=fs))
+}
+
+#para_min: find the pair of G and delta under min strategy
+para_min<-function(data,size,dm0){
+  centers<-get.local.center(data,dm0,size,method = 'min')
+  gap_bet_clus<-sim.mat(N=length(centers),dm0 = dm0,size = size,centers = centers)
+  temp.K<-length(centers)
+  
+  Thset<-gap_bet_clus%>%as.numeric()%>%sort(decreasing = T)%>%unique()
+  Thset<-Thset[-1]
+  Thset<-Thset[Thset!=0]
+  m=1
+  stop=0
+  Kset=temp.K
+  cutpoint<-c()
+  
+  while(stop!=1){
+    v=1
+    while (v <= temp.K) {
+      if (Thset[m]%in%gap_bet_clus[,v]){
+        comb_lab<-which(gap_bet_clus[,v]==Thset[m])
+        # gap_bet_clus[comb_lab,v]<-0
+        
+        gap_bet_clus[1:temp.K,v]<-sapply(1:temp.K,function(x){min(gap_bet_clus[x,c(v,comb_lab)])})
+        gap_bet_clus[v,1:temp.K]<-gap_bet_clus[1:temp.K,v]
+        gap_bet_clus<-gap_bet_clus[-comb_lab,-comb_lab]
+        diag(gap_bet_clus)<-1
+        temp.K<-temp.K-length(comb_lab)
+        if (is.matrix(gap_bet_clus)==FALSE){
+          gap_bet_clus<-gap_bet_clus%>%as.matrix()
+        }
+      } else {
+        v=v+1
+      }
+    }
+    Kset<-c(Kset,nrow(gap_bet_clus))
+    cutpoint<-c(cutpoint,Thset[m])
+    if (is.diag(gap_bet_clus)==TRUE){
+      stop<-1
+    } else {
+      m=m+1
+    }
+  }
+  cutpoint<-c(cutpoint,0)
+  return(list(cutpoint=cutpoint,K=Kset))
 }

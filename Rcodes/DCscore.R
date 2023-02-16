@@ -329,3 +329,4 @@ silhouette(fake_lab2,dist(databa))[,3]%>%mean()
 calinhara(databa,fake_lab)
 calinhara(databa,ba_temp_clus$depth_clus$cluster_vector)
 calinhara(databa,fake_lab2)
+
