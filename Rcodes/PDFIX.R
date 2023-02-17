@@ -492,7 +492,7 @@ PD_vec_fixmed<-function(X,med){
 }
 
 #combine SDO and PDV, for convenience
-ex2dprojdepth<-function(X,x,vec){
+ex2dprojdepth<-function(x,vec){
   SDOvalue<-SDO(x,vec)
   PD_value<-PDV(SDOvalue$SDO)
   return(PD_value)
@@ -517,7 +517,7 @@ tsdata<-expand.grid(seq(-1.05,0,length=200),seq(-0.54,0.55,length=200))%>%as.mat
 z<-SDO(tsdata,fixedvec2)
 zd<-PDV(z$SDO)
 
-med2<-test.x[which.min(test.x[,2]),]
+med2<-test.x[530,]
 fixedvec3<-PD_vec_fixmed(test.x,med2)
 z2<-SDO(tsdata,fixedvec3)
 zd2<-PDV(z2$SDO)
@@ -538,4 +538,3 @@ ggplot()+geom_point(data = test.x%>%as.data.frame(),aes(x=V1,y=V2))+
   geom_contour(data=tsdata,colour='purple',aes(x = Var1, y = Var2, z = zd3))+
   geom_text_contour(data=tsdata,aes(x = Var1, y = Var2, z = zd3))+geom_contour(data=tsdata,colour='green',aes(x = Var1, y = Var2, z = zd4))+
   geom_text_contour(data=tsdata,aes(x = Var1, y = Var2, z = zd4))
-

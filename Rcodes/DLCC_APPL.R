@@ -196,10 +196,8 @@ V6<-sim_temp_clus$depth_clus$cluster_vector
 data_new<-cbind(sim_data,V6)%>%as.data.frame()
 data_new$V6<-as.factor(data_new$V6)
 ggplot(data_new, aes(x = V1, 
-                     y = V2, color = as.factor(zl))) + geom_point(show.legend = T)+geom_point(data=data_new[735,], aes(x = V1, 
-                                                                                                                         y = V2, color = as.factor(zl)[735],size=1))
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-                                                                                           panel.background = element_blank(), axis.line = element_line(colour = "black"))
+                     y = V2, color = as.factor(zl))) + geom_point(show.legend = F)+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))
 
 ggplot(data_new, aes(x = V1, 
                      y = V2, color = V6)) + geom_point(show.legend = F)+
