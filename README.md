@@ -18,8 +18,5 @@ All matlab functions for running DLCC.
 # data
 All data sets used in examples
 
-# DLCC_tex
-Tex files of the manuscript.
-
 # Suppl.pdf
 Supplementary file for the manuscript.
