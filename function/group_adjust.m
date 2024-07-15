@@ -7,12 +7,12 @@ ppmin=cellfun(@(x) sum(x(:) < 0), difwb2);
 pp_min=sum(ppmin);
 % if any max within less than max between group similarity try split all
 % other groups to find if any group fusion.
+if pp_min>0
 while sum(ppmax) > 0
     suspect_label = find(ppmax > 0);
 
 
     [~, best_split] = try_split(temp_cl, sdm, spectral_method, pp_min, suspect_label); 
-    if ~isempty(best_split)
     [score_now,~] = score_computer(best_split, sdm, 'score'); 
 
 
@@ -28,9 +28,7 @@ while sum(ppmax) > 0
     else
         ppmax = [];
     end
-    else
-        ppmax=[];
-    end
+end
 end
 
 % randomly drop centers for handling group contamination
