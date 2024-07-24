@@ -34,11 +34,11 @@ confusionmat(species,iris_dlcc_result.cluster_vector)
 dm_seed=rspatial_dp(seed);
 [seed_rm,seed_rto,seed_dmo]=getlocalcenter(seed,dm_seed,63);
 rng(2023)
-[seed_dlcc_tmp,seed_dlcc_result]=DLCC(seed,dm_seed,seed_dmo,seed_rto,seed_rm,63,0.3,'min','rf');
+[seed_dlcc_tmp,seed_dlcc_result]=DLCC(seed,dm_seed,seed_dmo,seed_rto,seed_rm,63,0.3,'min','knn','K_knn',7);
 %evaluation
 
 Misclassification(seed_label+1,seed_dlcc_result.cluster_vector)%0.0857
-adjusted_rand_index(seed_label+1,seed_dlcc_result.cluster_vector)%0.7624
+adjusted_rand_index(seed_label+1,seed_dlcc_result.cluster_vector)%0.7626
 confusionmat(seed_label+1,seed_dlcc_result.cluster_vector)
 
 
@@ -67,7 +67,7 @@ rng(2023)
 
 %evaluation
 
-Misclassification(simu_label,simu_data_dlcc_result.cluster_vector)%0.0790
-adjusted_rand_index(simu_label,simu_data_dlcc_result.cluster_vector)%0.8060
+Misclassification(simu_label,simu_data_dlcc_result.cluster_vector)%0.0900
+adjusted_rand_index(simu_label,simu_data_dlcc_result.cluster_vector)%0.7792
 confusionmat(simu_label,simu_data_dlcc_result.cluster_vector)
 

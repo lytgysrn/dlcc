@@ -9,11 +9,13 @@ toc
 %202.4 seconds in  matlab R2023a, 11th Gen Intel(R) Core(TM)
 %i7-11700K @ 3.60GHz   3.50 GHz RAM 16GB
 yale_L=sqrt(yale_L);
+tic
 [yale_rm,yale_rto,yale_dmo]=getlocalcenter(X,dm_yale,200,'spatial',yale_L);
+
 
 rng(2023)
 [yale_dlcc_tmp,yale_dlcc_result]=DLCC(X,dm_yale,yale_dmo,yale_rto,yale_rm,200,0,'min','rf','k',10);
-
+toc
 
 %evaluation
 Misclassification(label,yale_dlcc_result.cluster_vector)%0.0065
@@ -44,18 +46,19 @@ check=loop_rfdlcc(X,temp_clus,label,100);
 check_table=array2table(check);
 summary(check_table)
     % 
-    %     Values:
+    %    Values:
     % 
-    %         Min        0.0045 
-    %         Median     0.0065 
-    %         Max         0.014 
+    %         Min        0.0025 
+    %         Median    0.00625 
+    %         Max         0.011 
     % 
     % check2: 100×1 double
     % 
     %     Values:
     % 
-    %         Min       0.96951 
-    %         Median    0.98564 
-    %         Max       0.99005 
+    %         Min       0.97629 
+    %         Median    0.98632 
+    %         Max       0.99449 
+
 
 

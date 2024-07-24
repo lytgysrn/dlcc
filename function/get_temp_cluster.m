@@ -40,7 +40,8 @@ if strcmp(method, 'min')
     score_left = Assign_score(a,Kclus, dm0, left_clus, temp_cl);
 
     %median of score_left is treated as the threshold for the obs in temporary clusters
-    lq = arrayfun(@(x) quantile(score_left{x},0.5), 1:Kclus);
+    % lq = arrayfun(@(x) quantile(score_left{x},0.5), 1:Kclus);
+    lq = arrayfun(@(x) mean(score_left{x}), 1:Kclus);
     %move those obs with scores<lq to the left obs pool.
     l0u = [];
     for i = 1:Kclus

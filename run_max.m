@@ -8,7 +8,7 @@ load data\smiley.mat
 rng(2023)
 dmMD_smiley=Maha_dmcreator(smiley,'MCD');
 [sm_rm,sm_rto,sm_dmo]=getlocalcenter(smiley,dmMD_smiley,25,'mahalanobis');
-[sm_dlcc_tmp,sm_dlcc_result]=DLCC(smiley,dmMD_smiley,sm_dmo,sm_rto,sm_rm,25,0.3,'max','maxdep','depth','mahalanobis');
+[sm_dlcc_tmp,sm_dlcc_result]=DLCC(smiley,dmMD_smiley,sm_dmo,sm_rto,sm_rm,25,0.3,'max','knn','depth','mahalanobis');
 
 %evaluation
 %for tmp cluster

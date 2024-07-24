@@ -16,6 +16,6 @@ rng(2023)
 [digit_dlcc_tmp,digit_dlcc_result]=DLCC(X,dm_digit,digit_dmo,digit_rto,digit_rm,500,0,'min','knn','k',10,'K_knn',5,'initial_n',7);
 
 %evaluation
-Misclassification(label+1,digit_dlcc_result.cluster_vector)%0.0870
-adjusted_rand_index(label,digit_dlcc_result.cluster_vector)%0.8259
+Misclassification(label+1,digit_dlcc_result.cluster_vector)%0.0856
+adjusted_rand_index(label,digit_dlcc_result.cluster_vector)%0.8284
 confusionmat(label+1,int32(digit_dlcc_result.cluster_vector))

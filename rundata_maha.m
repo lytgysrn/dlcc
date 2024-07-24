@@ -38,7 +38,7 @@ if_corr(seed)
 rng(2023)
 dmMD_seed=Maha_dmcreator(seed,'MCD');
 [seed_rm,seed_rto,seed_dmo]=getlocalcenter(seed,dmMD_seed,70,'mahalanobis');
-[seed_dlcc_tmp,seed_dlcc_result]=DLCC(seed,dmMD_seed,seed_dmo,seed_rto,seed_rm,70,0.7,'min','knn','depth','mahalanobis','maxdepth',true,'ifloop',false,'K_knn',6);
+[seed_dlcc_tmp,seed_dlcc_result]=DLCC(seed,dmMD_seed,seed_dmo,seed_rto,seed_rm,70,0.7,'min','knn','depth','mahalanobis','maxdepth',true,'ifloop',false,'K_knn',5);
 
 
 Misclassification(seed_label+1,seed_dlcc_result.cluster_vector)%0.081
@@ -76,8 +76,8 @@ dmMD_simu=Maha_dmcreator(simu_data,'provided',bmodel.classes,bmodel.cov);
 
 %evaluation
 
-Misclassification(simu_label,simu_dlcc_result.cluster_vector)%0.073
-adjusted_rand_index(simu_label,simu_dlcc_result.cluster_vector)%0.8202
+Misclassification(simu_label,simu_dlcc_result.cluster_vector)%0.075
+adjusted_rand_index(simu_label,simu_dlcc_result.cluster_vector)%0.8150
 confusionmat(simu_label,simu_dlcc_result.cluster_vector)
 
 
