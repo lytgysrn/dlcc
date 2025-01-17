@@ -18,7 +18,7 @@ Reproduce the running result of DLCC in Pendigits data set
 
 # function
 All matlab functions for contents in the paper.
-
+(The function for computing clustering error is from http://www.vision.jhu.edu/code/)
 # data
 All data sets used in examples
 
