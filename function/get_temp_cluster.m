@@ -1,4 +1,4 @@
-function temp_clus = get_temp_cluster(a,dm0, temp_clus, Kclus, temp_cl, s, method,count_list)
+function temp_clus = get_temp_cluster(a,dm0, temp_clus, Kclus, temp_cl, s, method,count_list,sym)
 %Obtain temporary clusters
  %Input: 
 %   a: filtered centers
@@ -12,7 +12,9 @@ function temp_clus = get_temp_cluster(a,dm0, temp_clus, Kclus, temp_cl, s, metho
 
 %Output:
   %temp_clus: final temporary clustering results
-  
+if nargin<9
+    sym=true;
+end
 if nargin<8
 count_list=[];
 end
@@ -24,6 +26,9 @@ cl = repelem(clus_ind,cl);
 [temp_clus, ulabel]=remove_ol_obs(clus_ind,temp_clus);
 
 if strcmp(method, 'min')
+    if (sym)
+    dm0=sym_mat(dm0);
+    end
     %compute scores for obs in temporary clusters
     ascore = Assign_score(a,Kclus, dm0, temp_clus, temp_cl);
     tobs=cat(1,temp_clus{:});
@@ -40,8 +45,9 @@ if strcmp(method, 'min')
     score_left = Assign_score(a,Kclus, dm0, left_clus, temp_cl);
 
     %median of score_left is treated as the threshold for the obs in temporary clusters
-    % lq = arrayfun(@(x) quantile(score_left{x},0.5), 1:Kclus);
+    %lq = arrayfun(@(x) quantile(score_left{x},0.5), 1:Kclus);
     lq = arrayfun(@(x) mean(score_left{x}), 1:Kclus);
+    %lq = arrayfun(@(x) local_mean_logic(x, score_left, ascore), 1:Kclus);
     %move those obs with scores<lq to the left obs pool.
     l0u = [];
     for i = 1:Kclus
@@ -128,7 +134,7 @@ if ~isempty(ulabel)
     clus_assign = zeros(1, size(score_mat, 1));
     for i = 1:size(score_mat, 1)
         h = find(score_mat(i, :) == max(score_mat(i, :)));
-        if length(h) == 1
+        if isscalar(h)
             clus_assign(i) = h;
         else
             % Draw case, not assign
@@ -175,3 +181,8 @@ for k = 1:Kclus
 end
 end
 
+
+function sym_matrix = sym_mat(mat)
+    % This function symmetrizes a matrix by averaging it with its transpose
+    sym_matrix = (mat + mat.') / 2;
+end

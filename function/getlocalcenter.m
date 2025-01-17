@@ -1,4 +1,4 @@
-function [rank_mat,rank_topobs,dm0_order] = getlocalcenter(data,dm0,s,depth,Lmatrix)
+function result = getlocalcenter(data,dm0,s,depth,Lmatrix)
 %find the deepest point for each subset, named as local centers.
 
 %Input:
@@ -11,6 +11,7 @@ function [rank_mat,rank_topobs,dm0_order] = getlocalcenter(data,dm0,s,depth,Lmat
 
 %Output:
   %rank_topobs: depth center of each subset
+  %ld_value:local depth value for each point (s)
   %rank_mat: the depth rank of the obs in its own subset.
   %dm0_order: the ordering matrix of dm0. Each column i stores the labels of points, starting from the nearest point to the farthest point from point i.
 
@@ -23,6 +24,7 @@ Nobs = size(data,1);
 dm0_order=dm0_order';
 rank_mat = zeros(Nobs,1);
 rank_topobs = zeros(1,Nobs);
+ ld_value= zeros(1,Nobs);
 
 % parfor_progress(Nobs/10);
 for j = 1:Nobs
@@ -39,10 +41,11 @@ for j = 1:Nobs
     names = dm0_order(1:s,j);
     local_rank = tiedrank(-local_d,'min');
     rank_mat(j) = local_rank(1);
+    ld_value(j)=local_d(1);
     rank_topobs(j) = names(local_rank==1);
     % if mod(j,10)==0
     % parfor_progress;
     % end
 end
-
+result=struct('rank_mat', rank_mat, 'rank_topobs', rank_topobs,'dm0_order',dm0_order,'ld_value',ld_value); 
 end

@@ -19,12 +19,13 @@ simu_data(:,end)=[];
 
 %iris
 dm_iris=rspatial_dp(meas);
-[iris_rm,iris_rto,iris_dmo]=getlocalcenter(meas,dm_iris,50);
-rng(2023)
-[iris_dlcc_tmp,iris_dlcc_result]=DLCC(meas,dm_iris,iris_dmo,iris_rto,iris_rm,50,0.62,'min','rf');
+%dm_iris_approxi=rspatial_dp_approxi(meas,false,100);
 
-%evaluation
+iris_info=getlocalcenter(meas,dm_iris,55);
+rng(2024)
+[iris_dlcc_tmp,iris_dlcc_result]=DLCC(meas,dm_iris,iris_info,55,0,'min','rf',ifloop=false);
 
+%for the final result
 Misclassification(species,iris_dlcc_result.cluster_vector)% 0.0400
 adjusted_rand_index(species,iris_dlcc_result.cluster_vector)%0.8858
 confusionmat(species,iris_dlcc_result.cluster_vector)
@@ -32,11 +33,11 @@ confusionmat(species,iris_dlcc_result.cluster_vector)
 
 %seed
 dm_seed=rspatial_dp(seed);
-[seed_rm,seed_rto,seed_dmo]=getlocalcenter(seed,dm_seed,63);
-rng(2023)
-[seed_dlcc_tmp,seed_dlcc_result]=DLCC(seed,dm_seed,seed_dmo,seed_rto,seed_rm,63,0.3,'min','knn','K_knn',7);
+seed_info=getlocalcenter(seed,dm_seed,63);
+[seed_dlcc_tmp,seed_dlcc_result]=DLCC(seed,dm_seed,seed_info,63,0,'min','knn');
 %evaluation
 
+%for the final result
 Misclassification(seed_label+1,seed_dlcc_result.cluster_vector)%0.0857
 adjusted_rand_index(seed_label+1,seed_dlcc_result.cluster_vector)%0.7626
 confusionmat(seed_label+1,seed_dlcc_result.cluster_vector)
@@ -48,26 +49,24 @@ confusionmat(seed_label+1,seed_dlcc_result.cluster_vector)
 %among variables are very different, normalization is necessary.
 wine=zscore(wine);
 dm_wine=rspatial_dp(wine);
-[wine_rm,wine_rto,wine_dmo]=getlocalcenter(wine,dm_wine,30);
-rng(2023)
-[wine_dlcc_md,wine_dlcc_mdr]=DLCC(wine,dm_wine,wine_dmo,wine_rto,wine_rm,30,0,'min','maxdep');
+wine_info=getlocalcenter(wine,dm_wine,50);
+[wine_dlcc_md,wine_dlcc_mdr]=DLCC(wine,dm_wine,wine_info,50,0,'min','knn',K_knn=37);
 %evaluation
 
 
-Misclassification(wine_label,wine_dlcc_mdr.cluster_vector)%0.0281
-adjusted_rand_index(wine_label,wine_dlcc_mdr.cluster_vector)% 0.9125
+Misclassification(wine_label,wine_dlcc_mdr.cluster_vector)%0.0225
+adjusted_rand_index(wine_label,wine_dlcc_mdr.cluster_vector)% 0.9295
 confusionmat(wine_label,wine_dlcc_mdr.cluster_vector)
 
 %simu_data
 [dm_simu_data, simu_data_Lmatrix]=rspatial_dp(simu_data);
-simu_data_Lmatrix=sqrt(simu_data_Lmatrix);
-[simu_data_rm,simu_data_rto,simu_data_dmo]=getlocalcenter(simu_data,dm_simu_data,160,'spatial',simu_data_Lmatrix);
-rng(2023)
-[simu_data_dlcc_tmp,simu_data_dlcc_result]=DLCC(simu_data,dm_simu_data,simu_data_dmo,simu_data_rto,simu_data_rm,160,0,'min','rf','k',4);
+simu_info=getlocalcenter(simu_data,dm_simu_data,165,'spatial',simu_data_Lmatrix);
+rng(2024)
+[simu_data_dlcc_tmp,simu_data_dlcc_result]=DLCC(simu_data,dm_simu_data,simu_info,165,0,'min','rf');
 
-%evaluation
 
-Misclassification(simu_label,simu_data_dlcc_result.cluster_vector)%0.0900
-adjusted_rand_index(simu_label,simu_data_dlcc_result.cluster_vector)%0.7792
+%for the final result
+Misclassification(simu_label,simu_data_dlcc_result.cluster_vector)%0.1
+adjusted_rand_index(simu_label,simu_data_dlcc_result.cluster_vector)%0.7521
 confusionmat(simu_label,simu_data_dlcc_result.cluster_vector)
 

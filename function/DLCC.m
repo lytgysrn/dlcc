@@ -1,17 +1,18 @@
-function [output,depth_clus]= DLCC(data,dm0,dm0_order,ranktopobs,rank_mat,s,Th,method,class_method,varargin)
+function [output,depth_clus]= DLCC(data,dm0,info,s,Th,method,class_method,varargin)
 %main function of DLCC algorithm
 %input:
   %data:data set
   %dm0: depth-based similarity matrix
+  %below three are summarized in info
   %dm0_order: the corresponding ordering matrix of dm0
   %ranktopobs: depth center of each subset
   %rank_mat: the depth rank of the obs in its own subset.
   %s: size of each subset
-  %Th: threshold for grouping filtered centers
+  %Th: threshold for grouping for max/or a range for min
   %method: min or max strategy
   %class_method: the classification method for left obs, three options are
   %max depth classifier (maxdep), random forest (rf), and K-nearest neighbor (knn)
-%optional input
+%optional input 
   %maxdepth: logical parameter controls whether DLCC loops until all
   %observations in the allocated cluster have the highest depth values.(Default: false)
   %depth: type of depth (Default: spatial depth)
@@ -20,10 +21,9 @@ function [output,depth_clus]= DLCC(data,dm0,dm0_order,ranktopobs,rank_mat,s,Th,m
   %K_knn:only when the class_method is KNN, # nearest neighbors (Default:5)
   %ifloop: logical parameter under the min strategy, if only remain one
   %center in each cluster, loop until the result doesn't change. (Default: false)
-  %k: the number of cluster (if known), for the min strategy to give a
-  %better intial grouping of centers.
-  %initial_n: only for flexible min strategy, set a start number for
-  %dropping centers in update_temp_cl.m
+  %sym: only for min strategy, if make the similarity matrix symmetric when
+  %computing scores for clustering. (Default: true)
+  %K:only for min strategy, a pre-defined K if necessary
 %Output:
   %temp_center: filtered centers in final clustering
   %temp_cluster: temporary clusters before classification and maxdep
@@ -32,16 +32,6 @@ function [output,depth_clus]= DLCC(data,dm0,dm0_order,ranktopobs,rank_mat,s,Th,m
 % Create an input parser object
 p = inputParser;
 
-% Add required arguments
-addRequired(p, 'data');
-addRequired(p, 'dm0');
-addRequired(p, 'dm0_order');
-addRequired(p, 'ranktopobs');
-addRequired(p, 'rank_mat');
-addRequired(p, 's');
-addRequired(p, 'Th');
-addRequired(p, 'method');
-addRequired(p, 'class_method');
 
 % Define default values for optional arguments
 defaultMaxdepth = false;
@@ -50,8 +40,9 @@ defaultLeafsize= 0;
 defaultNtrees = 100;
 defaultK_knn = 5;
 defaultifloop=false;
-defaultk=0;
-defaultinitial_n=1;
+defaultsym=true;
+defaultK=[];
+
 
 % Add optional arguments to the parser
 addParameter(p, 'maxdepth', defaultMaxdepth);
@@ -60,43 +51,40 @@ addParameter(p, 'ntrees', defaultNtrees);
 addParameter(p, 'leaf_size', defaultLeafsize);
 addParameter(p, 'K_knn', defaultK_knn);
 addParameter(p, 'ifloop', defaultifloop);
-addParameter(p,'k',defaultk)
-addParameter(p,'initial_n',defaultinitial_n)
+addParameter(p,'sym',defaultsym)
+addParameter(p,'K',defaultK)
 
 
 % Parse input arguments
-parse(p, data,dm0,dm0_order,ranktopobs,rank_mat,s,Th,method,class_method, varargin{:});
+parse(p, varargin{:});
 
 % Extract parsed data from the parser object
-data = p.Results.data;
-dm0 = p.Results.dm0;
-dm0_order=p.Results.dm0_order;
-s=p.Results.s;
-Th=p.Results.Th;
-method = p.Results.method;
-class_method=p.Results.class_method;
 maxdepth = p.Results.maxdepth;
 depth = p.Results.depth;
 ntrees = p.Results.ntrees;
 K_knn = p.Results.K_knn;
 leaf_size=p.Results.leaf_size;
 ifloop=p.Results.ifloop;
-k=p.Results.k;
-initial_n=p.Results.initial_n;
+sym=p.Results.sym;
+K=p.Results.K;
 %begin the function
+dm0_order=info.dm0_order;
+ranktopobs=info.rank_topobs;
+rank_mat=info.rank_mat;
 
 %filtering local centers
-a=filter_center(dm0,dm0_order,s,ranktopobs,rank_mat,method);
 
 if strcmp(method, 'min')
-    %obtain groups of filtered centers
-    if k~=0
-        temp_cl=get_temp_cl_WK(a,s,dm0_order,k,initial_n);
-    else
-        temp_cl=get_temp_cl(a,dm0,s,Th,'min',dm0_order);
+    ld_value=info.ld_value;
+    if isscalar(Th)
+        Th=[0.4,0.75];
     end
+    %obtain groups of filtered centers
+    a_info=filter_center(dm0, dm0_order, s, ranktopobs, rank_mat, 'min',ld_value,Th);  
+    temp_cl=get_temp_cl_WK(a_info,s,dm0_order,Th,K);
+
     %update centers a
-    a = cell2mat(temp_cl);
+    a = horzcat(temp_cl{:});
 
     if ifloop
         stop = 0;
@@ -109,7 +97,7 @@ if strcmp(method, 'min')
                 [C,~,~] = unique(dm0_order(1:s,temp_cl{i}));
                 temp_clus{i} = C;
             end
-            temp_clus=get_temp_cluster(a,dm0,temp_clus,Kclus, temp_cl,s, 'min');
+            temp_clus=get_temp_cluster(a,dm0,temp_clus,Kclus, temp_cl,s, 'min',[],sym);
             depth_clus = left_class(data,temp_clus,class_method,'maxdepth',maxdepth,'depth',depth,'ntrees',ntrees,'leaf_size',leaf_size,'K_knn',K_knn,'dm0',dm0);
             Kclus = length(temp_clus);
             d=depth_by_cluster(data, Kclus, depth_clus.cluster, a_save, depth);
@@ -150,11 +138,12 @@ if strcmp(method, 'min')
             [C,~,~] = unique(dm0_order(1:s,temp_cl{i}));
             temp_clus{i} = C;
         end
-        temp_clus=get_temp_cluster(a,dm0,temp_clus,Kclus, temp_cl,s, 'min');
+        temp_clus=get_temp_cluster(a,dm0,temp_clus,Kclus, temp_cl,s, 'min',[],sym);
         depth_clus = left_class(data,temp_clus,class_method,'maxdepth',maxdepth,'depth',depth,'ntrees',ntrees,'leaf_size',leaf_size,'K_knn',K_knn,'dm0',dm0);
     end
 elseif strcmp(method, 'max')
-    temp_cl=get_temp_cl(a,dm0,s,Th,'max',dm0_order);
+    a=filter_center(dm0,dm0_order,s,ranktopobs,rank_mat,'max');
+    temp_cl=get_temp_cl(a,dm0,s,Th,dm0_order);
     %update centers a
     a = cell2mat(temp_cl);
 

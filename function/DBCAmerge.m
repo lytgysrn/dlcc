@@ -43,7 +43,7 @@ function result = DBCAmerge(dbca, dm0_save)
                 v = v + 1;
             end
         end
-        if length(gap_bet_tk) == 1
+        if isscalar(gap_bet_tk)
             gs = gapset(m);
         else
             m = m + 1;

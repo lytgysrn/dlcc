@@ -1,107 +1,61 @@
-function [temp_cl] = group_adjust(temp_cl, sdm,spectral_method, initial_n)
+function [temp_cl] = group_adjust(temp_cl, sdm)
+%adjust temp_cl to satisfy min strategy
 
-
-[difwb,difwb2]=score_computer(temp_cl,sdm);
-ppmax=cellfun(@(x) sum(x(:) < 0), difwb);
-ppmin=cellfun(@(x) sum(x(:) < 0), difwb2);
+check=score_computer(temp_cl,sdm);
+ppmin=cellfun(@(x) nnz(x(:) < 0), check.difwb2);
 pp_min=sum(ppmin);
-% if any max within less than max between group similarity try split all
-% other groups to find if any group fusion.
-if pp_min>0
-    while sum(ppmax) > 0
-        suspect_label = find(ppmax > 0);
-
-
-        [~, best_split] = try_split(temp_cl, sdm, spectral_method, pp_min, suspect_label);
-        if ~isempty(best_split)
-            [score_now,~] = score_computer(best_split, sdm, 'score');
-
-
-            worst_label = find(score_now == max(score_now), 1);
-            int_worst = intersect(best_split{worst_label}, cell2mat(temp_cl(suspect_label)'));
-            if ~isempty(int_worst)
-                temp_cl = best_split;
-                temp_cl(worst_label) = [];
-                [difwb,difwb2]=score_computer(temp_cl,sdm);
-                ppmax=cellfun(@(x) sum(x(:) < 0), difwb);
-                ppmin=cellfun(@(x) sum(x(:) < 0), difwb2);
-                pp_min=sum(ppmin);
-            else
-                ppmax = [];
-            end
-        else
-            ppmax=[];
-        end
-    end
-end
-
-% randomly drop centers for handling group contamination
-if pp_min>0
+pp_max=sum(cellfun(@(x) nnz(x(:) < 0), check.difwb));
+pp_counts=pp_min+pp_max;
+if (pp_counts)>0
     wrong_lab = find(ppmin > 0);
-    possible_remove_points = [];
-    lwr = length(wrong_lab);
-    for v = 1:lwr
-        rcg_lab = wrong_lab(v);
+    while pp_counts ~= 0
+        if pp_min>0
+            lwr=length(wrong_lab);
+            for j = 1:lwr
+                group_points = temp_cl{wrong_lab(j)};
+                sub_sim = sdm(group_points, group_points);
+                original_betsim = check.min_bet{wrong_lab(j)};
 
-        if_less_0 = difwb2{rcg_lab} < 0;
+                min_sim_growth = arrayfun(@(v) mean(min(sub_sim(setdiff(1:size(sub_sim, 1), v), setdiff(1:size(sub_sim, 1), v))) - original_betsim(setdiff(1:length(original_betsim), v))), 1:length(group_points));
+                [~, max_idx] = max(min_sim_growth);
+                temp_cl{wrong_lab(j)} = setdiff(group_points, group_points(max_idx));
+            end
+            % Recalculate scores
+            check = score_computer(temp_cl, sdm);
+            pp = cellfun(@(x) sum(x < 0), check.difwb2);
+            pp_min = sum(pp);
+        end
 
-        add_points = temp_cl{rcg_lab}(if_less_0);
-        possible_remove_points = [possible_remove_points; add_points];
-    end
 
-    if ~isempty(possible_remove_points)
-        if initial_n == 1
-            temp_cl = update_temp_cl(temp_cl, possible_remove_points, wrong_lab,sdm);
+        if pp_min ~= 0
+            pp_counts=pp_min;
+            wrong_lab = find(pp ~= 0);
         else
-            temp_cl = update_temp_cl(temp_cl, possible_remove_points, wrong_lab,sdm, initial_n);
-        end
-    end
-end
-end
-
-function [avg_increase, best_split] = try_split(temp_cl, sdm, spectral_method, pp_cut, notcut)
-%try split all groups except groups in notcut, and pick up the one increase
-%the flexible threshold the most
-if nargin < 4
-    pp_cut = 0;
-end
-if nargin < 5
-    notcut = [];
-end
-% initial flexible threshold for each group
-k = length(temp_cl);
-initial_within_sim = cellfun(@(x) min(min(sdm(x, x))), temp_cl, 'UniformOutput', true);
-avg_increase = zeros(1, k);
-best_split = {};
-
-for i = 1:k
-    if ~ismember(i, notcut)
-        if length(temp_cl{i}) > 2
-            tmp_g = temp_cl;
-            split2 = spec_clus_withsim(sdm(temp_cl{i},temp_cl{i}), 2, spectral_method);
-            split2=split2{1};
-            tmp_g2 = cell(1, 2);
-            for j = 1:2
-                tmp_g2{j} = temp_cl{i}(split2 == j);
-            end
-            tmp_g(i) = [];
-            tmp_g = [tmp_g, tmp_g2];
-            [~,difwb2]= score_computer(tmp_g,sdm);
-            pp=sum(cellfun(@(x) sum(x(:) < 0), difwb2));
-            if pp <= pp_cut
-                update_sim = zeros(1, 2);
-                for x = 1:2
-                    sdm_subset = sdm(tmp_g2{x}, tmp_g2{x});
-                    update_sim(x) = min(min(sdm_subset));
+            ppmax=cellfun(@(x) sum(x < 0), check.difwb);
+            pp_max=sum(ppmax);
+            if pp_max>0
+                wrong_lab = find(ppmax > 0);
+                lwr = length(wrong_lab);
+                for v = 1:lwr
+                    temp_cl{wrong_lab(v)} = temp_cl{wrong_lab(v)}(check.difwb{wrong_lab(v)} >= 0);
                 end
-                avg_increase(i) = mean(update_sim - initial_within_sim(i));
-                if i == find(avg_increase == max(avg_increase), 1)
-                    best_split = tmp_g;
+                temp_cl = temp_cl(~cellfun('isempty', temp_cl));
+                check = score_computer(temp_cl, sdm);
+                pp = cellfun(@(x) sum(x < 0), check.difwb2);
+                pp_min = sum(pp);
+                if pp_min ~= 0
+                    pp_counts=pp_min;
+                    wrong_lab = find(pp ~= 0);
+                else
+                    pp_counts=0;
                 end
+            else
+                pp_counts=0;
             end
         end
     end
 end
+
 end
 
 

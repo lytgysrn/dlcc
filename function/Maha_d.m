@@ -7,14 +7,27 @@ function depth = Maha_d(x, data, cov_method)
    
     mu = mean(data);
     
-    if strcmp(cov_method, 'moment')
-        % Covariance matrix using the sample moment
-        cov_matrix = cov(data);
-    elseif strcmp(cov_method, 'MCD')
-        % Covariance matrix using the Minimum Covariance Determinant
-        cov_matrix = robustcov(data,'Method','olivehawkins','OutlierFraction',0.25);
-    else
-        error('Invalid covariance estimation method. Choose either "moment" or "MCD".');
+    try
+        if strcmp(cov_method, 'moment')
+            cov_matrix = cov(data);
+
+        elseif strcmp(cov_method, 'MCD')
+            %  Minimum Covariance Determinant
+            cov_matrix = robustcov(data, 'Method', 'olivehawkins', 'OutlierFraction', 0.25);
+            
+            % singuarity check
+            if rcond(cov_matrix) < 1e-10
+                cov_matrix = eye(size(data, 2)); % default to identity matrix
+            end
+
+        else
+
+            error('Invalid covariance estimation method. Choose either "moment" or "MCD".');
+        end
+
+    catch
+        warning('Covariance estimation failed. Using identity matrix.');
+        cov_matrix = eye(size(data, 2)); 
     end
 
     centered_x = x - mu;
