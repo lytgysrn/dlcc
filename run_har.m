@@ -12,8 +12,6 @@ tic
 sp_info=getlocalcenter(X,dm_spdata,1300,'spatial',spdata_Lmatrix);
 toc
 
-rng(2023)
-save_ari=zeros(100,1);
 
 [spdata_dlcc_tmp,spdata_dlcc_result]=DLCC(X,dm_spdata,sp_info,1300,0,'min','knn',K=6);
 
