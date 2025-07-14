@@ -1,4 +1,12 @@
 # DLCC_project
+Codes for Depth-Based Local Center Clustering: A Framework for Handling Different Clustering Scenarios
+
+@article{wang2025depth,
+  title={Depth-Based Local Center Clustering: A Framework for Handling Different Clustering Scenarios},
+  author={Wang, Siyi and Leblanc, Alexandre and McNicholas, Paul D},
+  journal={arXiv preprint arXiv:2505.09516},
+  year={2025}
+}
 
 ## run_digit.m:
 Reproduce the running result of DLCC in optidigits data set
